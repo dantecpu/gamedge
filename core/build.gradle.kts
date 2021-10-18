@@ -18,6 +18,7 @@ plugins {
     androidLibrary()
     gamedgeAndroid()
     kotlinKapt()
+    ksp()
 }
 
 android {
@@ -40,6 +41,7 @@ dependencies {
     implementation(deps.androidX.lifecycleCommonJava8)
     implementation(deps.androidX.browser)
 
+    implementation(deps.commons.core)
     implementation(deps.commons.ktx)
     implementation(deps.commons.network)
     implementation(deps.commons.windowAnims)
@@ -50,7 +52,7 @@ dependencies {
     kapt(deps.google.daggerHiltCompiler)
 
     implementation(deps.misc.hiltBinder)
-    kapt(deps.misc.hiltBinderCompiler)
+    ksp(deps.misc.hiltBinderCompiler)
 
     coreLibraryDesugaring(deps.misc.desugaredLibs)
 

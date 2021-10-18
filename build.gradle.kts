@@ -23,8 +23,8 @@ plugins {
 
 buildscript {
     repositories {
+        mavenCentral()
         google()
-        jcenter()
     }
 
     dependencies {
@@ -32,15 +32,16 @@ buildscript {
         classpath(deps.plugins.kotlinGradle)
         classpath(deps.plugins.navSafeArgs)
         classpath(deps.plugins.daggerHiltGradle)
+        classpath(deps.plugins.protobuf)
         classpath(deps.plugins.gradleVersions)
     }
 }
 
 allprojects {
     repositories {
-        maven { setUrl("https://jitpack.io") }
+        mavenCentral()
         google()
-        jcenter()
+        maven { setUrl("https://jitpack.io") }
     }
 
     // Without the below block, a build failure was happening when

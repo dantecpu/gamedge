@@ -18,6 +18,7 @@ plugins {
     androidApplication()
     gamedgeAndroid()
     kotlinKapt()
+    ksp()
     navSafeArgsKotlin()
     daggerHiltAndroid()
 }
@@ -30,15 +31,10 @@ android {
     buildFeatures {
         viewBinding = true
     }
-
-    // https://dagger.dev/hilt/gradle-setup#classpath-aggregation
-    lintOptions {
-        isCheckReleaseBuilds = false
-    }
 }
 
 hilt {
-    enableExperimentalClasspathAggregation = true
+    enableAggregatingTask = true
 }
 
 dependencies {
@@ -64,7 +60,7 @@ dependencies {
     kapt(deps.google.daggerHiltCompiler)
 
     implementation(deps.misc.hiltBinder)
-    kapt(deps.misc.hiltBinderCompiler)
+    ksp(deps.misc.hiltBinderCompiler)
 
     coreLibraryDesugaring(deps.misc.desugaredLibs)
 

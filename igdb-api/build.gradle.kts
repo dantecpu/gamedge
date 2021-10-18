@@ -21,6 +21,7 @@ plugins {
     androidLibrary()
     gamedgeAndroid()
     kotlinKapt()
+    ksp()
     kotlinxSerialization()
     daggerHiltAndroid() // does not compile instrumented tests without the plugin
 }
@@ -32,15 +33,10 @@ android {
         stringField("TWITCH_APP_CLIENT_ID", property("TWITCH_APP_CLIENT_ID", ""))
         stringField("TWITCH_APP_CLIENT_SECRET", property("TWITCH_APP_CLIENT_SECRET", ""))
     }
-
-    // https://dagger.dev/hilt/gradle-setup#classpath-aggregation
-    lintOptions {
-        isCheckReleaseBuilds = false
-    }
 }
 
 hilt {
-    enableExperimentalClasspathAggregation = true
+    enableAggregatingTask = true
 }
 
 dependencies {
@@ -62,7 +58,7 @@ dependencies {
     kapt(deps.google.daggerHiltCompiler)
 
     implementation(deps.misc.hiltBinder)
-    kapt(deps.misc.hiltBinderCompiler)
+    ksp(deps.misc.hiltBinderCompiler)
 
     testImplementation(project(deps.local.commonsTesting))
     testImplementation(deps.testing.jUnit)
