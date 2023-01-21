@@ -16,24 +16,22 @@
 
 package com.paulrybitskyi.gamedge.igdb.apicalypse
 
+import com.google.common.truth.Truth.assertThat
 import com.paulrybitskyi.gamedge.igdb.apicalypse.serialization.ApicalypseSerializerImpl
 import com.paulrybitskyi.gamedge.igdb.apicalypse.serialization.annotations.Apicalypse
 import com.paulrybitskyi.gamedge.igdb.apicalypse.serialization.annotations.ApicalypseClass
-import org.assertj.core.api.Assertions.*
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 
 internal class ApicalypseSerializerImplTest {
 
-
     private lateinit var SUT: ApicalypseSerializerImpl
-
 
     @Before
     fun setup() {
         SUT = ApicalypseSerializerImpl()
     }
-
 
     @Test
     fun `Serializes simple entity successfully`() {
@@ -57,7 +55,6 @@ internal class ApicalypseSerializerImplTest {
             .isEqualTo("field1, field2, field3, field4, field5, field6")
     }
 
-
     @Test
     fun `Throws exception if entity does not have @ApicalypseClass annotation`() {
         data class Entity(
@@ -65,10 +62,10 @@ internal class ApicalypseSerializerImplTest {
             val field2: Float
         )
 
-        assertThatExceptionOfType(IllegalArgumentException::class.java)
-            .isThrownBy { SUT.serialize(Entity::class.java) }
+        assertThrows(IllegalArgumentException::class.java) {
+            SUT.serialize(Entity::class.java)
+        }
     }
-
 
     @Test
     fun `Throws exception if name of field is empty`() {
@@ -78,10 +75,10 @@ internal class ApicalypseSerializerImplTest {
             val field1: Int
         )
 
-        assertThatExceptionOfType(IllegalArgumentException::class.java)
-            .isThrownBy { SUT.serialize(Entity::class.java) }
+        assertThrows(IllegalArgumentException::class.java) {
+            SUT.serialize(Entity::class.java)
+        }
     }
-
 
     @Test
     fun `Throws exception if name of field is blank`() {
@@ -91,10 +88,10 @@ internal class ApicalypseSerializerImplTest {
             val field1: Int
         )
 
-        assertThatExceptionOfType(IllegalArgumentException::class.java)
-            .isThrownBy { SUT.serialize(Entity::class.java) }
+        assertThrows(IllegalArgumentException::class.java) {
+            SUT.serialize(Entity::class.java)
+        }
     }
-
 
     @Test
     fun `Does not serialize fields that are not annotated with @Apicalypse annotation`() {
@@ -107,7 +104,6 @@ internal class ApicalypseSerializerImplTest {
 
         assertThat(SUT.serialize(Entity::class.java)).isEqualTo("field1")
     }
-
 
     @Test
     fun `Serializes parent entity that contains child entities successfully`() {
@@ -148,11 +144,14 @@ internal class ApicalypseSerializerImplTest {
         )
 
         assertThat(SUT.serialize(Parent::class.java))
-            .isEqualTo("parent, child1.field1, child2.field1, child2.field2, child3.field1, child3.field2, child3.field3")
+            .isEqualTo(
+                "parent, child1.field1, child2.field1, child2.field2, child3.field1, child3.field2, " +
+                "child3.field3"
+            )
     }
 
-
     @Test
+    @Suppress("LongMethod")
     fun `Serializes parent entity with deeply nested child entities successfully`() {
         @ApicalypseClass
         data class Grandchild1(
@@ -222,7 +221,6 @@ internal class ApicalypseSerializerImplTest {
             )
     }
 
-
     @Test
     fun `Serializes entity with list collection type`() {
         @ApicalypseClass
@@ -235,7 +233,6 @@ internal class ApicalypseSerializerImplTest {
 
         assertThat(SUT.serialize(Entity::class.java)).isEqualTo("field1, field2")
     }
-
 
     @Test
     fun `Serializes entity with set collection type`() {
@@ -250,7 +247,6 @@ internal class ApicalypseSerializerImplTest {
         assertThat(SUT.serialize(Entity::class.java)).isEqualTo("field1, field2")
     }
 
-
     @Test
     fun `Throws exception when serializing non collection generic type`() {
         @ApicalypseClass
@@ -261,9 +257,8 @@ internal class ApicalypseSerializerImplTest {
             val field2: Map<String, String>
         )
 
-        assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy { SUT.serialize(Entity::class.java) }
+        assertThrows(IllegalStateException::class.java) {
+            SUT.serialize(Entity::class.java)
+        }
     }
-
-
 }

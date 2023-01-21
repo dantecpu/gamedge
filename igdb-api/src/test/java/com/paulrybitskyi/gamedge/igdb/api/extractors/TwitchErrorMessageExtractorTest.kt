@@ -16,24 +16,21 @@
 
 package com.paulrybitskyi.gamedge.igdb.api.extractors
 
-import com.paulrybitskyi.gamedge.igdb.api.commons.errorextractors.TwitchErrorMessageExtractor
+import com.google.common.truth.Truth.assertThat
+import com.paulrybitskyi.gamedge.igdb.api.common.errorextractors.TwitchErrorMessageExtractor
 import kotlinx.serialization.json.Json
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 
 internal class TwitchErrorMessageExtractorTest {
 
-
     private lateinit var SUT: TwitchErrorMessageExtractor
-
 
     @Before
     fun setup() {
         SUT = TwitchErrorMessageExtractor(Json)
     }
-
 
     @Test
     fun `Extracts twitch error message successfully`() {
@@ -47,13 +44,12 @@ internal class TwitchErrorMessageExtractorTest {
         assertThat(SUT.extract(responseBody)).isEqualTo("invalid client secret")
     }
 
-
     @Test
     fun `Throws exception when twitch response body is not json`() {
-        assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy { SUT.extract("hello there") }
+        assertThrows(IllegalStateException::class.java) {
+            SUT.extract("hello there")
+        }
     }
-
 
     @Test
     fun `Throws exception when twitch response body does not have message field`() {
@@ -64,9 +60,8 @@ internal class TwitchErrorMessageExtractorTest {
             }
         """.trimIndent()
 
-        assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy { SUT.extract(responseBody) }
+        assertThrows(IllegalStateException::class.java) {
+            SUT.extract(responseBody)
+        }
     }
-
-
 }

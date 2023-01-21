@@ -18,45 +18,59 @@ package com.paulrybitskyi.gamedge.feature.category
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.viewModelScope
-import com.paulrybitskyi.gamedge.commons.ui.base.BaseViewModel
-import com.paulrybitskyi.gamedge.commons.ui.base.events.commons.GeneralCommand
+import com.paulrybitskyi.gamedge.common.domain.common.DispatcherProvider
+import com.paulrybitskyi.gamedge.common.ui.base.BaseViewModel
+import com.paulrybitskyi.gamedge.common.ui.base.events.common.GeneralCommand
+import com.paulrybitskyi.gamedge.common.ui.di.qualifiers.TransitionAnimationDuration
 import com.paulrybitskyi.gamedge.core.ErrorMapper
 import com.paulrybitskyi.gamedge.core.Logger
-import com.paulrybitskyi.gamedge.core.providers.DispatcherProvider
 import com.paulrybitskyi.gamedge.core.providers.StringProvider
 import com.paulrybitskyi.gamedge.core.utils.onError
-import com.paulrybitskyi.gamedge.core.utils.resultOrError
-import com.paulrybitskyi.gamedge.domain.commons.entities.nextLimitPage
-import com.paulrybitskyi.gamedge.domain.commons.entities.nextOffsetPage
-import com.paulrybitskyi.gamedge.domain.games.commons.ObserveGamesUseCaseParams
-import com.paulrybitskyi.gamedge.domain.games.commons.RefreshGamesUseCaseParams
+import com.paulrybitskyi.gamedge.common.domain.common.entities.nextLimit
+import com.paulrybitskyi.gamedge.common.domain.common.entities.nextOffset
+import com.paulrybitskyi.gamedge.common.domain.common.extensions.resultOrError
+import com.paulrybitskyi.gamedge.common.domain.games.common.ObserveGamesUseCaseParams
+import com.paulrybitskyi.gamedge.common.domain.games.common.RefreshGamesUseCaseParams
 import com.paulrybitskyi.gamedge.feature.category.di.GamesCategoryKey
-import com.paulrybitskyi.gamedge.feature.category.mapping.GamesCategoryUiStateFactory
-import com.paulrybitskyi.gamedge.feature.category.widgets.GameCategoryModel
+import com.paulrybitskyi.gamedge.feature.category.widgets.GameCategoryUiModelMapper
+import com.paulrybitskyi.gamedge.feature.category.widgets.GameCategoryUiModel
 import com.paulrybitskyi.gamedge.feature.category.widgets.GamesCategoryUiState
+import com.paulrybitskyi.gamedge.feature.category.widgets.disableLoading
+import com.paulrybitskyi.gamedge.feature.category.widgets.mapToUiModels
+import com.paulrybitskyi.gamedge.feature.category.widgets.toEmptyState
+import com.paulrybitskyi.gamedge.feature.category.widgets.enableLoading
+import com.paulrybitskyi.gamedge.feature.category.widgets.toSuccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-
-private const val PARAM_GAMES_CATEGORY = "games_category"
-
+private const val PARAM_GAMES_CATEGORY = "category"
 
 @HiltViewModel
 internal class GamesCategoryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     stringProvider: StringProvider,
+    @TransitionAnimationDuration
+    transitionAnimationDuration: Long,
     private val useCases: GamesCategoryUseCases,
-    private val uiStateFactory: GamesCategoryUiStateFactory,
+    private val uiModelMapper: GameCategoryUiModelMapper,
     private val dispatcherProvider: DispatcherProvider,
     private val errorMapper: ErrorMapper,
     private val logger: Logger
-): BaseViewModel() {
-
+) : BaseViewModel() {
 
     private var isObservingGames = false
     private var isRefreshingGames = false
@@ -71,105 +85,113 @@ internal class GamesCategoryViewModel @Inject constructor(
     private var gamesObservingJob: Job? = null
     private var gamesRefreshingJob: Job? = null
 
-    private val _toolbarTitle = MutableStateFlow("")
-    private val _uiState = MutableStateFlow<GamesCategoryUiState>(GamesCategoryUiState.Empty)
+    private val _uiState = MutableStateFlow(createEmptyUiState())
 
-    val toolbarTitle: StateFlow<String>
-        get() = _toolbarTitle
+    private val currentUiState: GamesCategoryUiState
+        get() = _uiState.value
 
-    val uiState: StateFlow<GamesCategoryUiState>
-        get() = _uiState
-
+    val uiState: StateFlow<GamesCategoryUiState> = _uiState.asStateFlow()
 
     init {
         gamesCategory = GamesCategory.valueOf(checkNotNull(savedStateHandle.get<String>(PARAM_GAMES_CATEGORY)))
         gamesCategoryKeyType = gamesCategory.toKeyType()
 
-        _toolbarTitle.value = stringProvider.getString(gamesCategory.titleId)
+        _uiState.update {
+            it.copy(title = stringProvider.getString(gamesCategory.titleId))
+        }
+
+        observeGames(resultEmissionDelay = transitionAnimationDuration)
+        refreshGames(resultEmissionDelay = transitionAnimationDuration)
     }
 
-
-    fun loadData(resultEmissionDelay: Long) {
-        observeGames(resultEmissionDelay)
-        refreshGames()
+    private fun createEmptyUiState(): GamesCategoryUiState {
+        return GamesCategoryUiState(
+            isLoading = false,
+            title = "",
+            games = emptyList(),
+        )
     }
-
 
     private fun observeGames(resultEmissionDelay: Long = 0L) {
-        if(isObservingGames) return
+        if (isObservingGames) return
 
-        gamesObservingJob = viewModelScope.launch {
-            useCases.getObservableUseCase(gamesCategoryKeyType)
-                .execute(observeGamesUseCaseParams)
-                .map(uiStateFactory::createWithResultState)
-                .flowOn(dispatcherProvider.computation)
-                .onError {
-                    logger.error(logTag, "Failed to observe ${gamesCategory.name} games.", it)
-                    dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
-                    emit(uiStateFactory.createWithEmptyState())
-                }
-                .onStart {
-                    isObservingGames = true
-                    emit(uiStateFactory.createWithLoadingState())
-                    delay(resultEmissionDelay)
-                }
-                .onCompletion { isObservingGames = false }
-                .collect {
-                    configureNextLoad(it)
-                    _uiState.value = it
-                }
-        }
+        gamesObservingJob = useCases.getObservableUseCase(gamesCategoryKeyType)
+            .execute(observeGamesUseCaseParams)
+            .map(uiModelMapper::mapToUiModels)
+            .flowOn(dispatcherProvider.computation)
+            .map { games -> currentUiState.toSuccessState(games) }
+            .onError {
+                logger.error(logTag, "Failed to observe ${gamesCategory.name} games.", it)
+                dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
+                emit(currentUiState.toEmptyState())
+            }
+            .onStart {
+                isObservingGames = true
+                delay(resultEmissionDelay)
+            }
+            .onCompletion { isObservingGames = false }
+            .onEach { emittedUiState ->
+                configureNextLoad(emittedUiState)
+                _uiState.update { emittedUiState }
+            }
+            .launchIn(viewModelScope)
     }
-
 
     private fun configureNextLoad(uiState: GamesCategoryUiState) {
-        if(uiState !is GamesCategoryUiState.Result) return
+        if (!uiState.hasLoadedNewGames()) return
 
         val paginationLimit = observeGamesUseCaseParams.pagination.limit
-        val itemCount = uiState.items.size
+        val gameCount = uiState.games.size
 
-        hasMoreGamesToLoad = (paginationLimit == itemCount)
+        hasMoreGamesToLoad = (paginationLimit == gameCount)
     }
 
-
-    private fun refreshGames() {
-        if(isRefreshingGames) return
-
-        gamesRefreshingJob = viewModelScope.launch {
-            useCases.getRefreshableUseCase(gamesCategoryKeyType)
-                .execute(refreshGamesUseCaseParams)
-                .resultOrError()
-                .onError {
-                    logger.error(logTag, "Failed to refresh ${gamesCategory.name} games.", it)
-                    dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
-                }
-                .onStart {
-                    isRefreshingGames = true
-                    _uiState.value = uiStateFactory.createWithLoadingState()
-                }
-                .onCompletion { isRefreshingGames = false }
-                .collect()
-        }
+    private fun GamesCategoryUiState.hasLoadedNewGames(): Boolean {
+        return (!isLoading && games.isNotEmpty())
     }
 
+    private fun refreshGames(resultEmissionDelay: Long = 0L) {
+        if (isRefreshingGames) return
+
+        gamesRefreshingJob = useCases.getRefreshableUseCase(gamesCategoryKeyType)
+            .execute(refreshGamesUseCaseParams)
+            .resultOrError()
+            .map { currentUiState }
+            .onError {
+                logger.error(logTag, "Failed to refresh ${gamesCategory.name} games.", it)
+                dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
+            }
+            .onStart {
+                isRefreshingGames = true
+                emit(currentUiState.enableLoading())
+                // Show loading state for some time since it can be too quick
+                delay(resultEmissionDelay)
+            }
+            .onCompletion {
+                isRefreshingGames = false
+                // Delay disabling loading to avoid quick state changes like
+                // empty, loading, empty, success
+                delay(resultEmissionDelay)
+                emit(currentUiState.disableLoading())
+            }
+            .onEach { emittedUiState -> _uiState.update { emittedUiState } }
+            .launchIn(viewModelScope)
+    }
 
     fun onToolbarLeftButtonClicked() {
         route(GamesCategoryRoute.Back)
     }
 
-
-    fun onGameClicked(game: GameCategoryModel) {
+    fun onGameClicked(game: GameCategoryUiModel) {
         route(GamesCategoryRoute.Info(game.id))
     }
-
 
     fun onBottomReached() {
         loadMoreGames()
     }
 
-
     private fun loadMoreGames() {
-        if(!hasMoreGamesToLoad) return
+        if (!hasMoreGamesToLoad) return
 
         viewModelScope.launch {
             fetchNextGamesBatch()
@@ -177,10 +199,9 @@ internal class GamesCategoryViewModel @Inject constructor(
         }
     }
 
-
     private suspend fun fetchNextGamesBatch() {
         refreshGamesUseCaseParams = refreshGamesUseCaseParams.copy(
-            refreshGamesUseCaseParams.pagination.nextOffsetPage()
+            refreshGamesUseCaseParams.pagination.nextOffset()
         )
 
         gamesRefreshingJob?.cancelAndJoin()
@@ -188,15 +209,12 @@ internal class GamesCategoryViewModel @Inject constructor(
         gamesRefreshingJob?.join()
     }
 
-
     private suspend fun observeNewGamesBatch() {
         observeGamesUseCaseParams = observeGamesUseCaseParams.copy(
-            observeGamesUseCaseParams.pagination.nextLimitPage()
+            observeGamesUseCaseParams.pagination.nextLimit()
         )
 
         gamesObservingJob?.cancelAndJoin()
         observeGames()
     }
-
-
 }

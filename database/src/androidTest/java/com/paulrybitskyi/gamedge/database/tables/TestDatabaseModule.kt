@@ -19,9 +19,9 @@ package com.paulrybitskyi.gamedge.database.tables
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.paulrybitskyi.gamedge.database.GamedgeDatabase
-import com.paulrybitskyi.gamedge.database.commons.MIGRATIONS
-import com.paulrybitskyi.gamedge.database.commons.RoomTypeConverter
-import com.paulrybitskyi.gamedge.database.commons.addTypeConverters
+import com.paulrybitskyi.gamedge.database.common.MIGRATIONS
+import com.paulrybitskyi.gamedge.database.common.RoomTypeConverter
+import com.paulrybitskyi.gamedge.database.common.addTypeConverters
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.migration.DisableInstallInCheck
@@ -30,7 +30,6 @@ import javax.inject.Singleton
 @Module
 @DisableInstallInCheck
 internal object TestDatabaseModule {
-
 
     @Provides
     @Singleton
@@ -45,6 +44,4 @@ internal object TestDatabaseModule {
         .addMigrations(*MIGRATIONS)
         .build()
     }
-
-
 }

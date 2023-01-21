@@ -16,68 +16,49 @@
 
 package com.paulrybitskyi.gamedge.igdb.api
 
-import com.paulrybitskyi.gamedge.commons.testing.DATA_OAUTH_CREDENTIALS
-import com.paulrybitskyi.gamedge.data.auth.datastores.local.AuthLocalDataStore
+import com.google.common.truth.Truth.assertThat
 import com.paulrybitskyi.gamedge.igdb.api.auth.Authorizer
-import com.paulrybitskyi.gamedge.igdb.api.auth.entities.AuthorizationType
-import io.mockk.MockKAnnotations
-import io.mockk.coEvery
-import io.mockk.impl.annotations.MockK
-import kotlinx.coroutines.test.runBlockingTest
-import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatExceptionOfType
+import com.paulrybitskyi.gamedge.igdb.api.auth.entities.ApiAuthorizationType
+import kotlinx.coroutines.test.runTest
 import org.junit.Before
 import org.junit.Test
 
 internal class AuthorizerTest {
 
-
-    @MockK private lateinit var authLocalDataStore: AuthLocalDataStore
+    private companion object {
+        const val ACCESS_TOKEN = "access_token"
+    }
 
     private lateinit var SUT: Authorizer
 
-
     @Before
     fun setup() {
-        MockKAnnotations.init(this)
-
-        SUT = Authorizer(authLocalDataStore)
+        SUT = Authorizer()
     }
-
 
     @Test
     fun `Builds basic authorization header successfully`() {
-        runBlockingTest {
-            coEvery { authLocalDataStore.getOauthCredentials() } returns DATA_OAUTH_CREDENTIALS
+        runTest {
+            val expectedHeader = "Basic $ACCESS_TOKEN"
+            val actualHeader = SUT.buildAuthorizationHeader(
+                type = ApiAuthorizationType.BASIC,
+                token = ACCESS_TOKEN,
+            )
 
-            assertThat(SUT.buildAuthorizationHeader(AuthorizationType.BASIC))
-                .isEqualTo("Basic access_token")
+            assertThat(actualHeader).isEqualTo(expectedHeader)
         }
     }
-
 
     @Test
     fun `Builds bearer authorization header successfully`() {
-        runBlockingTest {
-            coEvery { authLocalDataStore.getOauthCredentials() } returns DATA_OAUTH_CREDENTIALS
+        runTest {
+            val expectedHeader = "Bearer $ACCESS_TOKEN"
+            val actualHeader = SUT.buildAuthorizationHeader(
+                type = ApiAuthorizationType.BEARER,
+                token = ACCESS_TOKEN,
+            )
 
-            assertThat(SUT.buildAuthorizationHeader(AuthorizationType.BEARER))
-                .isEqualTo("Bearer access_token")
+            assertThat(actualHeader).isEqualTo(expectedHeader)
         }
     }
-
-
-    @Test
-    fun `Throws exception if no oauth credentials are present`() {
-        assertThatExceptionOfType(IllegalStateException::class.java)
-            .isThrownBy {
-                runBlockingTest {
-                    coEvery { authLocalDataStore.getOauthCredentials() } returns null
-
-                    SUT.buildAuthorizationHeader(AuthorizationType.BEARER)
-                }
-            }
-    }
-
-
 }

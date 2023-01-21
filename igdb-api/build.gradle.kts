@@ -23,26 +23,20 @@ plugins {
     kotlinKapt()
     ksp()
     kotlinxSerialization()
-    daggerHiltAndroid() // does not compile instrumented tests without the plugin
+    daggerHiltAndroid()
 }
 
 android {
     defaultConfig {
-        testInstrumentationRunner = "com.paulrybitskyi.gamedge.commons.testing.GamedgeTestRunner"
+        testInstrumentationRunner = "com.paulrybitskyi.gamedge.common.testing.GamedgeTestRunner"
 
         stringField("TWITCH_APP_CLIENT_ID", property("TWITCH_APP_CLIENT_ID", ""))
         stringField("TWITCH_APP_CLIENT_SECRET", property("TWITCH_APP_CLIENT_SECRET", ""))
     }
 }
 
-hilt {
-    enableAggregatingTask = true
-}
-
 dependencies {
-    implementation(project(deps.local.data))
-    implementation(project(deps.local.commonsApi))
-    implementation(project(deps.local.commonsData))
+    api(project(deps.local.commonApi))
     implementation(project(deps.local.igdbApicalypse))
     implementation(project(deps.local.core))
 
@@ -54,24 +48,24 @@ dependencies {
 
     implementation(deps.misc.kotlinResult)
 
-    implementation(deps.google.daggerHilt)
-    kapt(deps.google.daggerHiltCompiler)
+    implementation(deps.google.daggerHiltAndroid)
+    kapt(deps.google.daggerHiltAndroidCompiler)
 
     implementation(deps.misc.hiltBinder)
     ksp(deps.misc.hiltBinderCompiler)
 
-    testImplementation(project(deps.local.commonsTesting))
+    testImplementation(project(deps.local.commonTesting))
     testImplementation(deps.testing.jUnit)
-    testImplementation(deps.testing.assertJ)
+    testImplementation(deps.testing.truth)
     testImplementation(deps.testing.mockk)
     testImplementation(deps.testing.coroutines)
 
-    androidTestImplementation(project(deps.local.commonsTesting))
+    androidTestImplementation(project(deps.local.commonTesting))
     androidTestImplementation(deps.testing.testRunner)
     androidTestImplementation(deps.testing.jUnitExt)
-    androidTestImplementation(deps.testing.assertJ)
+    androidTestImplementation(deps.testing.truth)
     androidTestImplementation(deps.testing.mockWebServer)
 
     androidTestImplementation(deps.testing.daggerHilt)
-    kaptAndroidTest(deps.google.daggerHiltCompiler)
+    kaptAndroidTest(deps.google.daggerHiltAndroidCompiler)
 }

@@ -18,25 +18,20 @@ package com.paulrybitskyi.gamedge.core.formatters
 
 import com.paulrybitskyi.gamedge.core.R
 import com.paulrybitskyi.gamedge.core.providers.StringProvider
-import com.paulrybitskyi.gamedge.domain.games.entities.AgeRatingCategory
-import com.paulrybitskyi.gamedge.domain.games.entities.AgeRatingType
-import com.paulrybitskyi.gamedge.domain.games.entities.Game
+import com.paulrybitskyi.gamedge.common.domain.games.entities.AgeRatingCategory
+import com.paulrybitskyi.gamedge.common.domain.games.entities.AgeRatingType
+import com.paulrybitskyi.gamedge.common.domain.games.entities.Game
 import com.paulrybitskyi.hiltbinder.BindType
 import javax.inject.Inject
 
-
 interface GameAgeRatingFormatter {
-
     fun formatAgeRating(game: Game): String
-
 }
-
 
 @BindType
 internal class GameAgeRatingFormatterImpl @Inject constructor(
     private val stringProvider: StringProvider
 ) : GameAgeRatingFormatter {
-
 
     override fun formatAgeRating(game: Game): String {
         val ageRatings = game.ageRatings.filterNot {
@@ -54,6 +49,4 @@ internal class GameAgeRatingFormatterImpl @Inject constructor(
             ageRating.type.title
         )
     }
-
-
 }

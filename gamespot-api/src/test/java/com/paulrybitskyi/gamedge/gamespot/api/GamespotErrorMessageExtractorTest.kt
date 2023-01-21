@@ -16,23 +16,20 @@
 
 package com.paulrybitskyi.gamedge.gamespot.api
 
-import com.paulrybitskyi.gamedge.gamespot.api.commons.GamespotErrorMessageExtractor
+import com.google.common.truth.Truth.assertThat
+import com.paulrybitskyi.gamedge.gamespot.api.common.GamespotErrorMessageExtractor
 import kotlinx.serialization.json.Json
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.Before
 import org.junit.Test
 
 internal class GamespotErrorMessageExtractorTest {
 
-
     private lateinit var SUT: GamespotErrorMessageExtractor
-
 
     @Before
     fun setup() {
         SUT = GamespotErrorMessageExtractor(Json)
     }
-
 
     @Test
     fun `Extracts error message successfully`() {
@@ -51,12 +48,10 @@ internal class GamespotErrorMessageExtractorTest {
         assertThat(SUT.extract(responseBody)).isEqualTo("Invalid API Key")
     }
 
-
     @Test
     fun `Returns unknown error's message when response body is not json`() {
-        assertThat(SUT.extract("hello there")).isNotEmpty
+        assertThat(SUT.extract("hello there")).isNotEmpty()
     }
-
 
     @Test
     fun `Returns unknown error's message when response body does not have message field`() {
@@ -71,8 +66,6 @@ internal class GamespotErrorMessageExtractorTest {
             }
         """.trimIndent()
 
-        assertThat(SUT.extract(responseBody)).isNotEmpty
+        assertThat(SUT.extract(responseBody)).isNotEmpty()
     }
-
-
 }

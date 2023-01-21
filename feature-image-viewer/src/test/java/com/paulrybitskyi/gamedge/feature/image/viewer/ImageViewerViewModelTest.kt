@@ -18,107 +18,93 @@ package com.paulrybitskyi.gamedge.feature.image.viewer
 
 import androidx.lifecycle.SavedStateHandle
 import app.cash.turbine.test
-import com.paulrybitskyi.gamedge.commons.testing.FakeStringProvider
-import com.paulrybitskyi.gamedge.commons.testing.MainCoroutineRule
+import com.google.common.truth.Truth.assertThat
+import com.paulrybitskyi.gamedge.common.testing.FakeStringProvider
+import com.paulrybitskyi.gamedge.common.testing.domain.MainCoroutineRule
 import io.mockk.every
 import io.mockk.mockk
-import kotlinx.coroutines.test.runBlockingTest
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertThrows
 import org.junit.Rule
 import org.junit.Test
 
-
 private const val INITIAL_POSITION = 0
-
 
 internal class ImageViewerViewModelTest {
 
-
     @get:Rule
-    val mainCoroutineRule = MainCoroutineRule()
+    val mainCoroutineRule = MainCoroutineRule(StandardTestDispatcher())
 
-    private lateinit var SUT: ImageViewerViewModel
+    private val savedStateHandle = mockk<SavedStateHandle>(relaxed = true) {
+        every { get<String>(PARAM_TITLE) } returns ""
+        every { get<Int>(PARAM_INITIAL_POSITION) } returns INITIAL_POSITION
+        every { get<String>(PARAM_IMAGE_URLS) } returns "url1,url2,url3"
+        every { get<Int>(KEY_SELECTED_POSITION) } returns INITIAL_POSITION
+    }
 
-
-    @Before
-    fun setup() {
-        SUT = ImageViewerViewModel(
+    private val SUT by lazy {
+        ImageViewerViewModel(
             stringProvider = FakeStringProvider(),
-            savedStateHandle = setupSavedStateHandle()
+            savedStateHandle = savedStateHandle,
         )
     }
 
+    @Test
+    fun `Throws error when image urls are not provided`() {
+        every { savedStateHandle.get<String>(PARAM_IMAGE_URLS) } returns null
 
-    private fun setupSavedStateHandle(): SavedStateHandle {
-        return mockk(relaxed = true) {
-            every { get<String>(PARAM_TITLE) } returns ""
-            every { get<Int>(PARAM_INITIAL_POSITION) } returns INITIAL_POSITION
-            every { get<Array<String>>(PARAM_IMAGE_URLS) } returns arrayOf("", "", "")
-            every { get<Int>(KEY_SELECTED_POSITION) } returns INITIAL_POSITION
+        assertThrows(IllegalStateException::class.java) {
+            SUT
         }
     }
-
 
     @Test
     fun `Dispatches text sharing command when toolbar right button is clicked`() {
-        mainCoroutineRule.runBlockingTest {
+        runTest {
             SUT.commandFlow.test {
                 SUT.onToolbarRightButtonClicked()
 
-                assertThat(expectItem() is ImageViewerCommand.ShareText).isTrue
+                assertThat(awaitItem()).isInstanceOf(ImageViewerCommand.ShareText::class.java)
             }
         }
     }
-
 
     @Test
     fun `Emits selected position when page is changed`() {
-        mainCoroutineRule.runBlockingTest {
-            SUT.selectedPosition.test {
-                SUT.onPageChanged(10)
+        runTest {
+            val selectedPosition = 10
 
-                assertThat(expectItem() == INITIAL_POSITION).isTrue
-                assertThat(expectItem() == 10).isTrue
+            SUT.uiState.test {
+                SUT.onImageChanged(selectedPosition)
+
+                assertThat(awaitItem().selectedImageUrlIndex).isEqualTo(INITIAL_POSITION)
+                assertThat(awaitItem().selectedImageUrlIndex).isEqualTo(selectedPosition)
             }
         }
     }
-
 
     @Test
     fun `Emits toolbar title when page is changed`() {
-        mainCoroutineRule.runBlockingTest {
-            SUT.toolbarTitle.test {
-                SUT.onPageChanged(10)
+        runTest {
+            SUT.onImageChanged(10)
+            advanceUntilIdle()
 
-                assertThat(expectItem()).isNotEmpty
+            SUT.uiState.test {
+                assertThat(awaitItem().toolbarTitle).isNotEmpty()
             }
         }
     }
-
-
-    @Test
-    fun `Dispatches system windows reset command when back button is clicked`() {
-        mainCoroutineRule.runBlockingTest {
-            SUT.commandFlow.test {
-                SUT.onBackPressed()
-
-                assertThat(expectItem() is ImageViewerCommand.ResetSystemWindows).isTrue
-            }
-        }
-    }
-
 
     @Test
     fun `Routes to previous screen when back button is clicked`() {
-        mainCoroutineRule.runBlockingTest {
+        runTest {
             SUT.routeFlow.test {
                 SUT.onBackPressed()
 
-                assertThat(expectItem() is ImageViewerRoute.Back).isTrue
+                assertThat(awaitItem()).isInstanceOf(ImageViewerRoute.Back::class.java)
             }
         }
     }
-
-
 }

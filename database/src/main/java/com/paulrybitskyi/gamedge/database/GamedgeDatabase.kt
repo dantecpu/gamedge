@@ -20,21 +20,22 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.paulrybitskyi.gamedge.database.articles.ArticlesTypeConverter
-import com.paulrybitskyi.gamedge.database.articles.entities.Article
+import com.paulrybitskyi.gamedge.database.articles.entities.DbArticle
 import com.paulrybitskyi.gamedge.database.articles.tables.ArticlesTable
 import com.paulrybitskyi.gamedge.database.games.GamesTypeConverter
-import com.paulrybitskyi.gamedge.database.games.entities.Game
-import com.paulrybitskyi.gamedge.database.games.entities.LikedGame
+import com.paulrybitskyi.gamedge.database.games.entities.DbGame
+import com.paulrybitskyi.gamedge.database.games.entities.DbLikedGame
 import com.paulrybitskyi.gamedge.database.games.tables.GamesTable
 import com.paulrybitskyi.gamedge.database.games.tables.LikedGamesTable
 
 @Database(
     entities = [
-        Game::class,
-        LikedGame::class,
-        Article::class
+        DbGame::class,
+        DbLikedGame::class,
+        DbArticle::class
     ],
-    version = Constants.VERSION
+    version = Constants.VERSION,
+    exportSchema = true,
 )
 // Seems really strange that I have to specify this annotation here
 // with custom provided type converters
@@ -43,9 +44,7 @@ import com.paulrybitskyi.gamedge.database.games.tables.LikedGamesTable
     ArticlesTypeConverter::class
 )
 internal abstract class GamedgeDatabase : RoomDatabase() {
-
     abstract val gamesTable: GamesTable
     abstract val likedGamesTable: LikedGamesTable
     abstract val articlesTable: ArticlesTable
-
 }

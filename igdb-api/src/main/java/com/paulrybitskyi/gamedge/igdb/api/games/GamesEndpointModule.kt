@@ -16,11 +16,11 @@
 
 package com.paulrybitskyi.gamedge.igdb.api.games
 
-import com.paulrybitskyi.gamedge.commons.api.asConverterFactory
-import com.paulrybitskyi.gamedge.commons.api.calladapter.ApiResultCallAdapterFactory
-import com.paulrybitskyi.gamedge.igdb.api.commons.IgdbConstantsProvider
-import com.paulrybitskyi.gamedge.igdb.api.commons.di.qualifiers.Endpoint
-import com.paulrybitskyi.gamedge.igdb.api.commons.di.qualifiers.IgdbApi
+import com.paulrybitskyi.gamedge.common.api.asConverterFactory
+import com.paulrybitskyi.gamedge.common.api.calladapter.ApiResultCallAdapterFactory
+import com.paulrybitskyi.gamedge.igdb.api.common.IgdbConstantsProvider
+import com.paulrybitskyi.gamedge.igdb.api.common.di.qualifiers.Endpoint
+import com.paulrybitskyi.gamedge.igdb.api.common.di.qualifiers.IgdbApi
 import com.paulrybitskyi.gamedge.igdb.apicalypse.querybuilder.ApicalypseQueryBuilderFactory
 import com.paulrybitskyi.gamedge.igdb.apicalypse.serialization.ApicalypseSerializer
 import com.paulrybitskyi.gamedge.igdb.apicalypse.serialization.ApicalypseSerializerFactory
@@ -37,12 +37,10 @@ import retrofit2.converter.scalars.ScalarsConverterFactory
 @InstallIn(SingletonComponent::class)
 internal object GamesEndpointModule {
 
-
     @Provides
     fun provideGamesService(@Endpoint(Endpoint.Type.GAMES) retrofit: Retrofit): GamesService {
         return retrofit.create(GamesService::class.java)
     }
-
 
     @Provides
     @Endpoint(Endpoint.Type.GAMES)
@@ -61,17 +59,13 @@ internal object GamesEndpointModule {
             .build()
     }
 
-
     @Provides
     fun provideApicalypseQueryBuilderFactory(): ApicalypseQueryBuilderFactory {
         return ApicalypseQueryBuilderFactory
     }
 
-
     @Provides
     fun provideApicalypseSerializer(): ApicalypseSerializer {
         return ApicalypseSerializerFactory.create()
     }
-
-
 }

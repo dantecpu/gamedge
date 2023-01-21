@@ -24,43 +24,49 @@ plugins {
 
 android {
     buildFeatures {
-        viewBinding = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = versions.compose
     }
 }
 
 dependencies {
-    implementation(project(deps.local.domain))
+    implementation(project(deps.local.commonDomain))
+    implementation(project(deps.local.commonData))
     implementation(project(deps.local.core))
-    implementation(project(deps.local.commonsUi))
-    implementation(project(deps.local.commonsUiWidgets))
-    implementation(project(deps.local.imageLoading))
+    implementation(project(deps.local.commonUi))
+    implementation(project(deps.local.commonUiWidgets))
 
     implementation(deps.kotlin.coroutines)
 
-    implementation(deps.androidX.recyclerView)
-    implementation(deps.androidX.constraintLayout)
-    implementation(deps.androidX.viewPager2)
-    implementation(deps.androidX.fragmentKtx)
-
-    implementation(deps.google.materialComponents)
+    implementation(deps.compose.ui)
+    implementation(deps.compose.tooling)
+    implementation(deps.compose.animation)
+    implementation(deps.compose.foundation)
+    implementation(deps.compose.material)
+    implementation(deps.compose.runtime)
+    implementation(deps.compose.constraintLayout)
+    implementation(deps.compose.hilt)
+    implementation(deps.compose.accompanist.flowLayout)
+    implementation(deps.compose.accompanist.pager)
 
     implementation(deps.commons.core)
     implementation(deps.commons.ktx)
-    implementation(deps.commons.widgets)
-    implementation(deps.commons.recyclerView)
 
     implementation(deps.misc.kotlinResult)
-    implementation(deps.misc.expandableTextView)
+    implementation(deps.misc.coil)
 
-    implementation(deps.google.daggerHilt)
-    kapt(deps.google.daggerHiltCompiler)
+    implementation(deps.google.daggerHiltAndroid)
+    kapt(deps.google.daggerHiltAndroidCompiler)
 
     implementation(deps.misc.hiltBinder)
     ksp(deps.misc.hiltBinderCompiler)
 
-    testImplementation(project(deps.local.commonsTesting))
+    testImplementation(project(deps.local.commonTesting))
     testImplementation(deps.testing.jUnit)
-    testImplementation(deps.testing.assertJ)
+    testImplementation(deps.testing.truth)
     testImplementation(deps.testing.mockk)
     testImplementation(deps.testing.coroutines)
     testImplementation(deps.testing.turbine)

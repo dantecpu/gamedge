@@ -7,6 +7,8 @@
 
 An Android application for browsing video games and checking the latest gaming news from around the world.
 
+Built entirely using the Jetpack Compose.
+
 The aim of this project is to showcase the latest trends in Android development by utilizing the best practices, libraries, and tools to develop a fully-fledged Android application.
 
 ## Contents
@@ -18,7 +20,6 @@ The aim of this project is to showcase the latest trends in Android development 
 * [Development Setup](#development-setup)
   * [IGDB](#igdb)
   * [Gamespot](#gamespot)
-* [MAD Score](#mad-score)
 * [Download](#download)
 * [Contribution](#contribution)
 * [Questions](#questions)
@@ -28,55 +29,65 @@ The aim of this project is to showcase the latest trends in Android development 
 
 ### Videos
 
-<a href="https://user-images.githubusercontent.com/14782808/111520186-88671800-8760-11eb-8995-8e45a5cd9213.mp4">
-<img src="/media/demo1_thumbnail.png" width="32%"/>
-</a>
-<a href="https://user-images.githubusercontent.com/14782808/111520260-9b79e800-8760-11eb-9665-1062ed2b2c24.mp4">
-<img src="/media/demo2_thumbnail.png" width="32%"/>
-</a>
-<a href="https://user-images.githubusercontent.com/14782808/111520365-b187a880-8760-11eb-9dbe-0ffc44635ef8.mp4">
-<img src="/media/demo3_thumbnail.png" width="32%"/>
-</a>
+<details>
+<summary><b>Demo 1</b></summary>
+</p>
+
+https://user-images.githubusercontent.com/14782808/111520186-88671800-8760-11eb-8995-8e45a5cd9213.mp4
+</details>
+<details>
+<summary><b>Demo 2</b></summary>
+</p>
+
+https://user-images.githubusercontent.com/14782808/111520260-9b79e800-8760-11eb-9665-1062ed2b2c24.mp4
+</details>
+<details>
+<summary><b>Demo 3</b></summary>
+</p>
+
+https://user-images.githubusercontent.com/14782808/111520365-b187a880-8760-11eb-9dbe-0ffc44635ef8.mp4
+</details>
 
 ### Screenshots
 
 <p>
-<img src="/media/screenshot1.jpg" width="32%"/>
-<img src="/media/screenshot2.jpg" width="32%"/>
-<img src="/media/screenshot3.jpg" width="32%"/>
+<img src="/media/screenshot1.png" width="32%"/>
+<img src="/media/screenshot2.png" width="32%"/>
+<img src="/media/screenshot3.png" width="32%"/>
 </p>
 <p>
-<img src="/media/screenshot4.jpg" width="32%"/>
-<img src="/media/screenshot5.jpg" width="32%"/>
-<img src="/media/screenshot6.jpg" width="32%"/>
+<img src="/media/screenshot4.png" width="32%"/>
+<img src="/media/screenshot5.png" width="32%"/>
+<img src="/media/screenshot6.png" width="32%"/>
 </p>
 
 ## Tech Stack
 
 - [Kotlin](https://kotlinlang.org/) - First class and official programming language for Android development.
+- [Jetpack Compose](https://developer.android.com/jetpack/compose) - Android’s modern toolkit for building native UI.
 - [Coroutines](https://kotlinlang.org/docs/reference/coroutines-overview.html) and [Flow](https://kotlinlang.org/docs/reference/coroutines/flow.html#asynchronous-flow) - Official Kotlin's tooling for performing asynchronous work.
 - [MVVM/MVI Architecture](https://developer.android.com/jetpack/guide) - Official recommended architecture for building robust, production-quality apps.
 - [Android Jetpack](https://developer.android.com/jetpack) - Jetpack is a suite of libraries to help developers build state-of-the-art applications.
-  - [Navigation](https://developer.android.com/guide/navigation) - Navigation is a framework for navigating between screens within an Android application.
+  - [Navigation Compose](https://developer.android.com/jetpack/compose/navigation) - Navigation Compose is a framework for navigating between composables while taking advantage of the Navigation component’s infrastructure and features.
   - [ViewModel](https://developer.android.com/topic/libraries/architecture/viewmodel) - The ViewModel is designed to store and manage UI-related data in a lifecycle conscious way.
   - [StateFlow](https://developer.android.com/kotlin/flow/stateflow-and-sharedflow#stateflow) - StateFlow is a state-holder observable flow that emits the current and new state updates to its collectors.
   - [Room](https://developer.android.com/topic/libraries/architecture/room) - The Room library provides an abstraction layer over SQLite to allow for more robust database access.
   - [DataStore](https://developer.android.com/topic/libraries/architecture/datastore) - DataStore is a data storage solution that stores key-value pairs or typed objects with [protocol buffers](https://developers.google.com/protocol-buffers).
   - [Dagger Hilt](https://developer.android.com/training/dependency-injection/hilt-android) - Hilt is a dependency injection library for Android.
-  - [ViewBinding](https://developer.android.com/topic/libraries/view-binding) - View binding is a feature that allows you to more easily write code that interacts with views.
   - [MotionLayout](https://developer.android.com/training/constraint-layout/motionlayout) - MotionLayout allows you to create beautiful animations in your app without too much hassle.
   - [Custom Tabs](https://developers.google.com/web/android/custom-tabs/implementation-guide) - Custom Tabs is a browser feature that gives apps more control over their web experience.
-- [Material Components for Android](https://github.com/material-components/material-components-android) - Modular and customizable Material Design UI components for Android.
+- [Accompanist](https://github.com/google/accompanist) - A collection of extension libraries for Jetpack Compose.
 - [OkHttp](https://github.com/square/okhttp) - An HTTP client for making network calls.
 - [Retrofit](https://github.com/square/retrofit) - A library for building REST API clients.
 - [KotlinX Serialization](https://github.com/Kotlin/kotlinx.serialization) - A multiplatform Kotlin serialization library.
-- [Picasso](https://github.com/square/picasso) - An image loading library.
+- [Coil](https://github.com/coil-kt/coil) - An image loading library.
 - [Hilt Binder](https://github.com/mars885/hilt-binder) - An annotating processing library that automatically generates Dagger Hilt's `@Binds` methods.
 - [Kotlin Result](https://github.com/michaelbull/kotlin-result) - A multiplatform Result monad for modelling success or failure operations.
-- [PhotoView](https://github.com/Baseflow/PhotoView) - A library that allows to zoom Android images.
+- [Detekt](https://github.com/detekt/detekt) - A static code analysis library for Kotlin.
+- [Ktlint](https://github.com/pinterest/ktlint) - A library for formatting Kotlin code according to official guidelines.
 - [Testing](https://developer.android.com/training/testing) - The app is currently covered with unit tests and instrumentation tests.
   - [JUnit](https://junit.org/junit5) - JUnit is a unit testing framework for the Java programming language.
-  - [AssertJ](https://assertj.github.io/doc) - AssertJ is a java library providing a rich set of assertions.
+  - [Truth](https://github.com/google/truth) - Truth is a library providing fluent assertions for Java and Android.
   - [MockK](https://github.com/mockk/mockk) - MockK is a mocking library for Kotlin.
   - [Coroutines Test](https://github.com/Kotlin/kotlinx.coroutines/tree/master/kotlinx-coroutines-test) - A library for testing Kotlin coroutines.
   - [Turbine](https://github.com/cashapp/turbine) - A testing library for Kotlin Flows.
@@ -116,11 +127,6 @@ Check [this link](https://www.gamespot.com/api/) on how to obtain an API key. On
 ```
 GAMESPOT_API_KEY=your_api_key_here
 ```
-
-## MAD Score
-
-![summary](/media/mad_score_summary.png)
-![kotlin](/media/mad_score_kotlin.png)
 
 ## Download
 

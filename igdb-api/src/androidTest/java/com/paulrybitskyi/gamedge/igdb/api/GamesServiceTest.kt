@@ -18,12 +18,13 @@ package com.paulrybitskyi.gamedge.igdb.api
 
 import com.github.michaelbull.result.get
 import com.github.michaelbull.result.getError
-import com.paulrybitskyi.gamedge.commons.api.Error
-import com.paulrybitskyi.gamedge.commons.testing.DATA_OAUTH_CREDENTIALS
-import com.paulrybitskyi.gamedge.commons.testing.utils.startSafe
-import com.paulrybitskyi.gamedge.data.auth.datastores.local.AuthLocalDataStore
-import com.paulrybitskyi.gamedge.igdb.api.games.ApiCategory
-import com.paulrybitskyi.gamedge.igdb.api.games.ApiGame
+import com.google.common.truth.Truth.assertThat
+import com.paulrybitskyi.gamedge.common.api.Error
+import com.paulrybitskyi.gamedge.common.testing.startSafe
+import com.paulrybitskyi.gamedge.igdb.api.auth.entities.ApiOauthCredentials
+import com.paulrybitskyi.gamedge.igdb.api.common.CredentialsStore
+import com.paulrybitskyi.gamedge.igdb.api.games.entities.ApiCategory
+import com.paulrybitskyi.gamedge.igdb.api.games.entities.ApiGame
 import com.paulrybitskyi.gamedge.igdb.api.games.GamesService
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -31,24 +32,27 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import javax.inject.Inject
 
+private val OAUTH_CREDENTIALS = ApiOauthCredentials(
+    accessToken = "access_token",
+    tokenType = "token_type",
+    tokenTtl = 5000L,
+)
+
 @HiltAndroidTest
 internal class GamesServiceTest {
-
 
     @get:Rule
     var hiltRule = HiltAndroidRule(this)
 
     @Inject lateinit var mockWebServer: MockWebServer
-    @Inject lateinit var authLocalDataStore: AuthLocalDataStore
+    @Inject lateinit var credentialsStore: CredentialsStore
     @Inject lateinit var gamesService: GamesService
-
 
     @Before
     fun setup() {
@@ -56,10 +60,9 @@ internal class GamesServiceTest {
         mockWebServer.startSafe()
 
         runBlocking {
-            authLocalDataStore.saveOauthCredentials(DATA_OAUTH_CREDENTIALS)
+            credentialsStore.saveOauthCredentials(OAUTH_CREDENTIALS)
         }
     }
-
 
     @Test
     fun http_error_is_returned_when_games_endpoint_returns_bad_request_response() {
@@ -68,10 +71,9 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.HttpError).isTrue
+            assertThat(error is Error.HttpError).isTrue()
         }
     }
-
 
     @Test
     fun http_error_with_400_code_is_returned_when_games_endpoint_returns_bad_request_response() {
@@ -80,11 +82,10 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.HttpError).isTrue
+            assertThat(error is Error.HttpError).isTrue()
             assertThat((error as Error.HttpError).code).isEqualTo(400)
         }
     }
-
 
     @Test
     fun http_error_with_proper_error_message_is_returned_when_games_endpoint_returns_bad_request_response() {
@@ -105,11 +106,10 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.HttpError).isTrue
+            assertThat(error is Error.HttpError).isTrue()
             assertThat((error as Error.HttpError).message).isEqualTo("Syntax Error")
         }
     }
-
 
     @Test
     fun http_error_with_unknown_error_message_is_returned_when_games_endpoint_returns_bad_request_response() {
@@ -124,11 +124,10 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.HttpError).isTrue
+            assertThat(error is Error.HttpError).isTrue()
             assertThat((error as Error.HttpError).message).isEqualTo("Unknown Error: $errorBody")
         }
     }
-
 
     @Test
     fun parsed_credentials_are_returned_when_games_endpoint_returns_successful_response() {
@@ -188,7 +187,6 @@ internal class GamesServiceTest {
         }
     }
 
-
     @Test
     fun unknown_error_is_returned_when_games_endpoint_returns_successful_response_with_no_body() {
         runBlocking {
@@ -196,10 +194,9 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.UnknownError).isTrue
+            assertThat(error is Error.UnknownError).isTrue()
         }
     }
-
 
     @Test
     fun unknown_error_is_returned_when_games_endpoint_returns_successful_response_with_bad_json() {
@@ -212,10 +209,9 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.UnknownError).isTrue
+            assertThat(error is Error.UnknownError).isTrue()
         }
     }
-
 
     @Test
     fun network_error_is_returned_when_network_is_disconnected_while_fetching_games() {
@@ -227,15 +223,12 @@ internal class GamesServiceTest {
 
             val error = gamesService.getGames("").getError()
 
-            assertThat(error is Error.NetworkError).isTrue
+            assertThat(error is Error.NetworkError).isTrue()
         }
     }
-
 
     @After
     fun cleanup() {
         mockWebServer.shutdown()
     }
-
-
 }

@@ -16,21 +16,13 @@
 
 package com.paulrybitskyi.gamedge.feature.image.viewer
 
-import com.paulrybitskyi.gamedge.commons.ui.base.events.Command
-import com.paulrybitskyi.gamedge.commons.ui.base.events.Route
-
+import com.paulrybitskyi.gamedge.common.ui.base.events.Command
+import com.paulrybitskyi.gamedge.common.ui.base.events.Route
 
 internal sealed class ImageViewerCommand : Command {
-
-    data class ShareText(val text: String): ImageViewerCommand()
-
-    object ResetSystemWindows : ImageViewerCommand()
-
+    data class ShareText(val text: String) : ImageViewerCommand()
 }
 
-
-internal sealed class ImageViewerRoute : Route {
-
+sealed class ImageViewerRoute : Route {
     object Back : ImageViewerRoute()
-
 }

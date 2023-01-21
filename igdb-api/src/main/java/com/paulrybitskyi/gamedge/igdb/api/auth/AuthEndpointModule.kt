@@ -16,24 +16,23 @@
 
 package com.paulrybitskyi.gamedge.igdb.api.auth
 
-import com.paulrybitskyi.gamedge.commons.api.asConverterFactory
-import com.paulrybitskyi.gamedge.commons.api.calladapter.ApiResultCallAdapterFactory
-import com.paulrybitskyi.gamedge.igdb.api.commons.TwitchConstantsProvider
-import com.paulrybitskyi.gamedge.igdb.api.commons.di.qualifiers.Endpoint
-import com.paulrybitskyi.gamedge.igdb.api.commons.di.qualifiers.IgdbApi
+import com.paulrybitskyi.gamedge.common.api.asConverterFactory
+import com.paulrybitskyi.gamedge.common.api.calladapter.ApiResultCallAdapterFactory
+import com.paulrybitskyi.gamedge.igdb.api.common.TwitchConstantsProvider
+import com.paulrybitskyi.gamedge.igdb.api.common.di.qualifiers.Endpoint
+import com.paulrybitskyi.gamedge.igdb.api.common.di.qualifiers.IgdbApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Singleton
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 internal object AuthEndpointModule {
-
 
     @Provides
     @Singleton
@@ -48,12 +47,10 @@ internal object AuthEndpointModule {
         )
     }
 
-
     @Provides
     fun provideAuthService(@Endpoint(Endpoint.Type.AUTH) retrofit: Retrofit): AuthService {
         return retrofit.create(AuthService::class.java)
     }
-
 
     @Provides
     @Endpoint(Endpoint.Type.AUTH)
@@ -70,6 +67,4 @@ internal object AuthEndpointModule {
             .baseUrl(twitchConstantsProvider.apiBaseUrl)
             .build()
     }
-
-
 }

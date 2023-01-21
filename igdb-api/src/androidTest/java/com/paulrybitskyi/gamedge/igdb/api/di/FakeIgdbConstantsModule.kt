@@ -16,8 +16,8 @@
 
 package com.paulrybitskyi.gamedge.igdb.api.di
 
-import com.paulrybitskyi.gamedge.igdb.api.commons.IgdbConstantsProvider
-import com.paulrybitskyi.gamedge.igdb.api.commons.di.IgdbConstantsModule
+import com.paulrybitskyi.gamedge.igdb.api.common.IgdbConstantsProvider
+import com.paulrybitskyi.gamedge.igdb.api.common.di.IgdbConstantsModule
 import com.paulrybitskyi.gamedge.igdb.api.utils.FakeIgdbConstantsProvider
 import dagger.Binds
 import dagger.Module
@@ -31,9 +31,6 @@ import dagger.hilt.testing.TestInstallIn
 )
 internal interface FakeIgdbConstantsModule {
 
-
     @Binds
     fun bindIgdbConstantsProvider(binding: FakeIgdbConstantsProvider): IgdbConstantsProvider
-
-
 }

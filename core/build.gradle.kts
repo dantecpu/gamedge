@@ -25,40 +25,34 @@ android {
     compileOptions {
         isCoreLibraryDesugaringEnabled = true
     }
-
-    buildFeatures {
-        viewBinding = true
-    }
 }
 
 dependencies {
-    implementation(project(deps.local.domain))
+    implementation(project(deps.local.commonDomain))
 
     implementation(deps.kotlin.coroutines)
     implementation(deps.kotlin.serialization)
 
-    implementation(deps.androidX.appCompat)
-    implementation(deps.androidX.lifecycleCommonJava8)
     implementation(deps.androidX.browser)
 
     implementation(deps.commons.core)
     implementation(deps.commons.ktx)
     implementation(deps.commons.network)
     implementation(deps.commons.windowAnims)
-    
+
     implementation(deps.misc.kotlinResult)
 
-    implementation(deps.google.daggerHilt)
-    kapt(deps.google.daggerHiltCompiler)
+    implementation(deps.google.daggerHiltAndroid)
+    kapt(deps.google.daggerHiltAndroidCompiler)
 
     implementation(deps.misc.hiltBinder)
     ksp(deps.misc.hiltBinderCompiler)
 
     coreLibraryDesugaring(deps.misc.desugaredLibs)
 
-    testImplementation(project(deps.local.commonsTesting))
+    testImplementation(project(deps.local.commonTesting))
     testImplementation(deps.testing.jUnit)
-    testImplementation(deps.testing.assertJ)
+    testImplementation(deps.testing.truth)
     testImplementation(deps.testing.mockk)
     testImplementation(deps.testing.coroutines)
 

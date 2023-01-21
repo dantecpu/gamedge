@@ -17,36 +17,48 @@
 package com.paulrybitskyi.gamedge.feature.discovery
 
 import androidx.lifecycle.viewModelScope
-import com.paulrybitskyi.gamedge.commons.ui.base.BaseViewModel
-import com.paulrybitskyi.gamedge.commons.ui.base.events.commons.GeneralCommand
+import com.paulrybitskyi.gamedge.common.domain.common.DispatcherProvider
+import com.paulrybitskyi.gamedge.common.domain.common.extensions.resultOrError
+import com.paulrybitskyi.gamedge.common.ui.base.BaseViewModel
+import com.paulrybitskyi.gamedge.common.ui.base.events.common.GeneralCommand
 import com.paulrybitskyi.gamedge.core.ErrorMapper
 import com.paulrybitskyi.gamedge.core.Logger
-import com.paulrybitskyi.gamedge.core.providers.DispatcherProvider
+import com.paulrybitskyi.gamedge.core.providers.StringProvider
 import com.paulrybitskyi.gamedge.core.utils.onError
-import com.paulrybitskyi.gamedge.core.utils.resultOrError
-import com.paulrybitskyi.gamedge.domain.games.commons.ObserveGamesUseCaseParams
-import com.paulrybitskyi.gamedge.domain.games.commons.RefreshGamesUseCaseParams
-import com.paulrybitskyi.gamedge.domain.games.entities.Game
-import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemGameModelMapper
-import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemModelFactory
-import com.paulrybitskyi.gamedge.feature.discovery.mapping.mapToGameModels
-import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemGameModel
-import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemModel
+import com.paulrybitskyi.gamedge.common.domain.games.common.ObserveGamesUseCaseParams
+import com.paulrybitskyi.gamedge.common.domain.games.common.RefreshGamesUseCaseParams
+import com.paulrybitskyi.gamedge.common.domain.games.entities.Game
+import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemGameUiModelMapper
+import com.paulrybitskyi.gamedge.feature.discovery.mapping.mapToUiModels
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemGameUiModel
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemUiModel
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.hideProgressBar
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.showProgressBar
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.toSuccessState
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.update
 
 @HiltViewModel
-class GamesDiscoveryViewModel @Inject constructor(
+internal class GamesDiscoveryViewModel @Inject constructor(
     private val useCases: GamesDiscoveryUseCases,
-    private val itemModelFactory: GamesDiscoveryItemModelFactory,
-    private val itemGameModelMapper: GamesDiscoveryItemGameModelMapper,
+    private val uiModelMapper: GamesDiscoveryItemGameUiModelMapper,
     private val dispatcherProvider: DispatcherProvider,
+    private val stringProvider: StringProvider,
     private val errorMapper: ErrorMapper,
     private val logger: Logger
 ) : BaseViewModel() {
-
 
     private var isObservingGames = false
     private var isRefreshingGames = false
@@ -54,117 +66,98 @@ class GamesDiscoveryViewModel @Inject constructor(
     private var observeGamesUseCaseParams = ObserveGamesUseCaseParams()
     private var refreshGamesUseCaseParams = RefreshGamesUseCaseParams()
 
-    private val _items = MutableStateFlow<List<GamesDiscoveryItemModel>>(listOf())
+    private val _items = MutableStateFlow<List<GamesDiscoveryItemUiModel>>(listOf())
 
-    val items: StateFlow<List<GamesDiscoveryItemModel>>
-        get() = _items
+    private val currentItems: List<GamesDiscoveryItemUiModel>
+        get() = _items.value
 
+    val items: StateFlow<List<GamesDiscoveryItemUiModel>> = _items.asStateFlow()
 
     init {
         initDiscoveryItemsData()
-    }
-
-
-    private fun initDiscoveryItemsData() {
-        _items.value = GamesDiscoveryCategory.values().map(itemModelFactory::createDefault)
-    }
-
-
-    fun loadData() {
         observeGames()
         refreshGames()
     }
 
-
-    private fun observeGames() {
-        if(isObservingGames) return
-
-        viewModelScope.launch {
-            combine(
-                flows = GamesDiscoveryCategory.values().map { observeGames(it) },
-                transform = { it.toList() }
-            )
-            .map { _items.value.withResultState(it) }
-            .onError { logger.error(logTag, "Failed to observe games.", it) }
-            .onStart { isObservingGames = true }
-            .onCompletion { isObservingGames = false }
-            .collect { _items.value = it }
+    private fun initDiscoveryItemsData() {
+        _items.update {
+            GamesDiscoveryCategory.values().map { category ->
+                GamesDiscoveryItemUiModel(
+                    id = category.id,
+                    categoryName = category.name,
+                    title = stringProvider.getString(category.titleId),
+                    isProgressBarVisible = false,
+                    games = emptyList(),
+                )
+            }
         }
     }
 
+    private fun observeGames() {
+        if (isObservingGames) return
 
-    private suspend fun observeGames(category: GamesDiscoveryCategory): Flow<List<GamesDiscoveryItemGameModel>> {
+        combine(
+            flows = GamesDiscoveryCategory.values().map(::observeGames),
+            transform = { it.toList() }
+        )
+        .map { games -> currentItems.toSuccessState(games) }
+        .onError { logger.error(logTag, "Failed to observe games.", it) }
+        .onStart { isObservingGames = true }
+        .onCompletion { isObservingGames = false }
+        .onEach { emittedItems -> _items.update { emittedItems } }
+        .launchIn(viewModelScope)
+    }
+
+    private fun observeGames(category: GamesDiscoveryCategory): Flow<List<GamesDiscoveryItemGameUiModel>> {
         return useCases.getObservableUseCase(category.toKeyType())
             .execute(observeGamesUseCaseParams)
-            .map(itemGameModelMapper::mapToGameModels)
+            .map(uiModelMapper::mapToUiModels)
             .flowOn(dispatcherProvider.computation)
     }
 
-
-    private fun List<GamesDiscoveryItemModel>.withResultState(
-        games: List<List<GamesDiscoveryItemGameModel>>
-    ): List<GamesDiscoveryItemModel> {
-        return mapIndexed { index, itemModel ->
-            itemModelFactory.createCopyWithResultState(itemModel, games[index])
-        }
-    }
-
-
     private fun refreshGames() {
-        if(isRefreshingGames) return
+        if (isRefreshingGames) return
 
-        viewModelScope.launch {
-            combine(
-                flows = GamesDiscoveryCategory.values().map { refreshGames(it) },
-                transform = { it.toList() }
-            )
-            .onError {
-                logger.error(logTag, "Failed to refresh games.", it)
-                dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
-            }
-            .onStart {
-                isRefreshingGames = true
-                _items.value = _items.value.withVisibleProgressBar()
-            }
-            .onCompletion {
-                isRefreshingGames = false
-                _items.value = _items.value.withHiddenProgressBar()
-            }
-            .collect()
+        combine(
+            flows = GamesDiscoveryCategory.values().map(::refreshGames),
+            transform = { it.toList() }
+        )
+        .map { currentItems }
+        .onError {
+            logger.error(logTag, "Failed to refresh games.", it)
+            dispatchCommand(GeneralCommand.ShowLongToast(errorMapper.mapToMessage(it)))
         }
+        .onStart {
+            isRefreshingGames = true
+            emit(currentItems.showProgressBar())
+        }
+        .onCompletion {
+            isRefreshingGames = false
+            emit(currentItems.hideProgressBar())
+        }
+        .onEach { emittedItems -> _items.update { emittedItems } }
+        .launchIn(viewModelScope)
     }
 
-
-    private suspend fun refreshGames(category: GamesDiscoveryCategory): Flow<List<Game>> {
+    private fun refreshGames(category: GamesDiscoveryCategory): Flow<List<Game>> {
         return useCases.getRefreshableUseCase(category.toKeyType())
             .execute(refreshGamesUseCaseParams)
             .resultOrError()
     }
 
-
-    private fun List<GamesDiscoveryItemModel>.withVisibleProgressBar(): List<GamesDiscoveryItemModel> {
-        return map(itemModelFactory::createCopyWithVisibleProgressBar)
+    fun onSearchButtonClicked() {
+        route(GamesDiscoveryRoute.Search)
     }
-
-
-    private fun List<GamesDiscoveryItemModel>.withHiddenProgressBar(): List<GamesDiscoveryItemModel> {
-        return map(itemModelFactory::createCopyWithHiddenProgressBar)
-    }
-
 
     fun onCategoryMoreButtonClicked(category: String) {
         route(GamesDiscoveryRoute.Category(category))
     }
 
-
-    fun onCategoryGameClicked(item: GamesDiscoveryItemGameModel) {
+    fun onCategoryGameClicked(item: GamesDiscoveryItemGameUiModel) {
         route(GamesDiscoveryRoute.Info(gameId = item.id))
     }
-
 
     fun onRefreshRequested() {
         refreshGames()
     }
-
-
 }

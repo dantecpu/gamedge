@@ -19,7 +19,6 @@ plugins {
     gamedgeAndroid()
     kotlinKapt()
     ksp()
-    navSafeArgsKotlin()
     daggerHiltAndroid()
 }
 
@@ -29,35 +28,47 @@ android {
     }
 
     buildFeatures {
-        viewBinding = true
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = versions.compose
     }
 }
 
-hilt {
-    enableAggregatingTask = true
-}
-
 dependencies {
-    implementation(project(deps.local.commonsUi))
+    implementation(project(deps.local.commonDomain))
+    implementation(project(deps.local.commonData))
+    implementation(project(deps.local.core))
+    implementation(project(deps.local.commonUi))
+    implementation(project(deps.local.commonUiWidgets))
     implementation(project(deps.local.igdbApi))
     implementation(project(deps.local.gamespotApi))
     implementation(project(deps.local.database))
     implementation(project(deps.local.featureCategory))
-    implementation(project(deps.local.featureDashboard))
     implementation(project(deps.local.featureDiscovery))
     implementation(project(deps.local.featureInfo))
     implementation(project(deps.local.featureImageViewer))
     implementation(project(deps.local.featureLikes))
     implementation(project(deps.local.featureNews))
     implementation(project(deps.local.featureSearch))
-    implementation(project(deps.local.featureSplash))
+    implementation(project(deps.local.featureSettings))
 
-    implementation(deps.androidX.navFragmentKtx)
+    implementation(deps.androidX.splash)
 
-    implementation(deps.commons.windowAnims)
+    implementation(deps.compose.ui)
+    implementation(deps.compose.tooling)
+    implementation(deps.compose.foundation)
+    implementation(deps.compose.material)
+    implementation(deps.compose.runtime)
+    implementation(deps.compose.navigation)
+    implementation(deps.compose.accompanist.navigationAnimations)
 
-    implementation(deps.google.daggerHilt)
-    kapt(deps.google.daggerHiltCompiler)
+    implementation(deps.commons.core)
+    implementation(deps.commons.ktx)
+
+    implementation(deps.google.daggerHiltAndroid)
+    kapt(deps.google.daggerHiltAndroidCompiler)
 
     implementation(deps.misc.hiltBinder)
     ksp(deps.misc.hiltBinderCompiler)
@@ -67,3 +78,12 @@ dependencies {
     testImplementation(deps.testing.jUnit)
     androidTestImplementation(deps.testing.jUnitExt)
 }
+
+val installGitHook by tasks.registering(Copy::class) {
+    from(File(rootProject.rootDir, "hooks/pre-push"))
+    into(File(rootProject.rootDir, ".git/hooks/"))
+    // https://github.com/gradle/kotlin-dsl-samples/issues/1412
+    fileMode = 0b111101101 // -rwxr-xr-x
+}
+
+tasks.getByPath(":app:preBuild").dependsOn(installGitHook)

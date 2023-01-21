@@ -18,148 +18,147 @@ package com.paulrybitskyi.gamedge.feature.discovery
 
 import app.cash.turbine.test
 import com.github.michaelbull.result.Ok
-import com.paulrybitskyi.gamedge.commons.testing.*
-import com.paulrybitskyi.gamedge.commons.ui.base.events.commons.GeneralCommand
-import com.paulrybitskyi.gamedge.domain.games.DomainGame
-import com.paulrybitskyi.gamedge.domain.games.usecases.discovery.ObservePopularGamesUseCase
-import com.paulrybitskyi.gamedge.domain.games.usecases.discovery.RefreshPopularGamesUseCase
+import com.google.common.truth.Truth.assertThat
+import com.paulrybitskyi.gamedge.common.domain.games.entities.Game
+import com.paulrybitskyi.gamedge.common.testing.domain.DOMAIN_GAMES
+import com.paulrybitskyi.gamedge.common.testing.FakeErrorMapper
+import com.paulrybitskyi.gamedge.common.testing.FakeLogger
+import com.paulrybitskyi.gamedge.common.testing.FakeStringProvider
+import com.paulrybitskyi.gamedge.common.testing.domain.MainCoroutineRule
+import com.paulrybitskyi.gamedge.common.ui.base.events.common.GeneralCommand
+import com.paulrybitskyi.gamedge.common.domain.games.usecases.ObservePopularGamesUseCase
+import com.paulrybitskyi.gamedge.common.domain.games.usecases.RefreshPopularGamesUseCase
 import com.paulrybitskyi.gamedge.feature.discovery.di.GamesDiscoveryKey
-import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemGameModelMapper
-import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemModelFactoryImpl
-import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemGameModel
-import io.mockk.MockKAnnotations
-import io.mockk.coEvery
-import io.mockk.impl.annotations.MockK
+import com.paulrybitskyi.gamedge.feature.discovery.mapping.GamesDiscoveryItemGameUiModelMapper
+import com.paulrybitskyi.gamedge.feature.discovery.widgets.GamesDiscoveryItemGameUiModel
+import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.runBlockingTest
-import org.assertj.core.api.Assertions.assertThat
-import org.junit.Before
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import org.junit.Rule
 import org.junit.Test
 
 internal class GamesDiscoveryViewModelTest {
 
-
     @get:Rule
-    val mainCoroutineRule = MainCoroutineRule()
+    val mainCoroutineRule = MainCoroutineRule(StandardTestDispatcher())
 
-    @MockK private lateinit var observePopularGamesUseCase: ObservePopularGamesUseCase
-    @MockK private lateinit var refreshPopularGamesUseCase: RefreshPopularGamesUseCase
+    private val observePopularGamesUseCase = mockk<ObservePopularGamesUseCase>(relaxed = true)
+    private val refreshPopularGamesUseCase = mockk<RefreshPopularGamesUseCase>(relaxed = true)
 
-    private lateinit var logger: FakeLogger
-    private lateinit var SUT: GamesDiscoveryViewModel
-
-
-    @Before
-    fun setup() {
-        MockKAnnotations.init(this)
-
-        logger = FakeLogger()
-        SUT = GamesDiscoveryViewModel(
+    private val logger = FakeLogger()
+    private val SUT by lazy {
+        GamesDiscoveryViewModel(
             useCases = setupUseCases(),
-            itemModelFactory = GamesDiscoveryItemModelFactoryImpl(FakeStringProvider()),
-            itemGameModelMapper = FakeGamesDiscoveryItemGameModelMapper(),
-            dispatcherProvider = FakeDispatcherProvider(),
+            uiModelMapper = FakeGamesDiscoveryItemGameUiModelMapper(),
+            dispatcherProvider = mainCoroutineRule.dispatcherProvider,
+            stringProvider = FakeStringProvider(),
             errorMapper = FakeErrorMapper(),
             logger = logger
         )
     }
-
 
     private fun setupUseCases(): GamesDiscoveryUseCases {
         return GamesDiscoveryUseCases(
             observeGamesUseCasesMap = mapOf(
                 GamesDiscoveryKey.Type.POPULAR to observePopularGamesUseCase,
                 GamesDiscoveryKey.Type.RECENTLY_RELEASED to mockk {
-                    coEvery { execute(any()) } returns flowOf(DOMAIN_GAMES)
+                    every { execute(any()) } returns flowOf(DOMAIN_GAMES)
                 },
                 GamesDiscoveryKey.Type.COMING_SOON to mockk {
-                    coEvery { execute(any()) } returns flowOf(DOMAIN_GAMES)
+                    every { execute(any()) } returns flowOf(DOMAIN_GAMES)
                 },
                 GamesDiscoveryKey.Type.MOST_ANTICIPATED to mockk {
-                    coEvery { execute(any()) } returns flowOf(DOMAIN_GAMES)
+                    every { execute(any()) } returns flowOf(DOMAIN_GAMES)
                 }
             ),
             refreshGamesUseCasesMap = mapOf(
                 GamesDiscoveryKey.Type.POPULAR to refreshPopularGamesUseCase,
                 GamesDiscoveryKey.Type.RECENTLY_RELEASED to mockk {
-                    coEvery { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
+                    every { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
                 },
                 GamesDiscoveryKey.Type.COMING_SOON to mockk {
-                    coEvery { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
+                    every { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
                 },
                 GamesDiscoveryKey.Type.MOST_ANTICIPATED to mockk {
-                    coEvery { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
+                    every { execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
                 }
             )
         )
     }
 
-
     @Test
     fun `Logs error when games observing use case throws error`() {
-        mainCoroutineRule.runBlockingTest {
-            coEvery { observePopularGamesUseCase.execute(any()) } returns flow { throw Exception("error") }
-            coEvery { refreshPopularGamesUseCase.execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
+        runTest {
+            every { observePopularGamesUseCase.execute(any()) } returns flow { throw IllegalStateException("error") }
+            every { refreshPopularGamesUseCase.execute(any()) } returns flowOf(Ok(DOMAIN_GAMES))
 
-            SUT.loadData()
+            SUT
+            advanceUntilIdle()
 
-            assertThat(logger.errorMessage).isNotEmpty
+            assertThat(logger.errorMessage).isNotEmpty()
         }
     }
-
 
     @Test
     fun `Logs error when games refreshing use case throws error`() {
-        mainCoroutineRule.runBlockingTest {
-            coEvery { observePopularGamesUseCase.execute(any()) } returns flowOf(DOMAIN_GAMES)
-            coEvery { refreshPopularGamesUseCase.execute(any()) } returns flow { throw Exception("error") }
+        runTest {
+            every { observePopularGamesUseCase.execute(any()) } returns flowOf(DOMAIN_GAMES)
+            every { refreshPopularGamesUseCase.execute(any()) } returns flow { throw IllegalStateException("error") }
 
-            SUT.loadData()
+            SUT
+            advanceUntilIdle()
 
-            assertThat(logger.errorMessage).isNotEmpty
+            assertThat(logger.errorMessage).isNotEmpty()
         }
     }
-
 
     @Test
     fun `Dispatches toast showing command when games refreshing use case throws error`() {
-        mainCoroutineRule.runBlockingTest {
-            coEvery { observePopularGamesUseCase.execute(any()) } returns flowOf(DOMAIN_GAMES)
-            coEvery { refreshPopularGamesUseCase.execute(any()) } returns flow { throw Exception("error") }
+        runTest {
+            every { observePopularGamesUseCase.execute(any()) } returns flowOf(DOMAIN_GAMES)
+            every { refreshPopularGamesUseCase.execute(any()) } returns flow { throw IllegalStateException("error") }
 
             SUT.commandFlow.test {
-                SUT.loadData()
-
-                val command = expectItem()
-
-                assertThat(command is GeneralCommand.ShowLongToast).isTrue
+                assertThat(awaitItem()).isInstanceOf(GeneralCommand.ShowLongToast::class.java)
             }
         }
     }
 
+    @Test
+    fun `Routes to search screen when search button is clicked`() {
+        runTest {
+            SUT.routeFlow.test {
+                SUT.onSearchButtonClicked()
+
+                assertThat(awaitItem()).isInstanceOf(GamesDiscoveryRoute.Search::class.java)
+            }
+        }
+    }
 
     @Test
     fun `Routes to games category screen when more button is clicked`() {
-        mainCoroutineRule.runBlockingTest {
+        runTest {
+            val categoryName = GamesDiscoveryCategory.POPULAR.name
+
             SUT.routeFlow.test {
-                SUT.onCategoryMoreButtonClicked("popular")
+                SUT.onCategoryMoreButtonClicked(categoryName)
 
-                val route = expectItem()
+                val route = awaitItem()
 
-                assertThat(route is GamesDiscoveryRoute.Category).isTrue
-                assertThat((route as GamesDiscoveryRoute.Category).category).isEqualTo("popular")
+                assertThat(route).isInstanceOf(GamesDiscoveryRoute.Category::class.java)
+                assertThat((route as GamesDiscoveryRoute.Category).category).isEqualTo(categoryName)
             }
         }
     }
 
-
     @Test
     fun `Routes to game info screen when game is clicked`() {
-        mainCoroutineRule.runBlockingTest {
-            val item = GamesDiscoveryItemGameModel(
+        runTest {
+            val item = GamesDiscoveryItemGameUiModel(
                 id = 1,
                 title = "title",
                 coverUrl = null
@@ -168,26 +167,22 @@ internal class GamesDiscoveryViewModelTest {
             SUT.routeFlow.test {
                 SUT.onCategoryGameClicked(item)
 
-                val route = expectItem()
+                val route = awaitItem()
 
-                assertThat(route is GamesDiscoveryRoute.Info).isTrue
+                assertThat(route).isInstanceOf(GamesDiscoveryRoute.Info::class.java)
                 assertThat((route as GamesDiscoveryRoute.Info).gameId).isEqualTo(item.id)
             }
         }
     }
 
+    private class FakeGamesDiscoveryItemGameUiModelMapper : GamesDiscoveryItemGameUiModelMapper {
 
-    private class FakeGamesDiscoveryItemGameModelMapper : GamesDiscoveryItemGameModelMapper {
-
-        override fun mapToGameModel(game: DomainGame): GamesDiscoveryItemGameModel {
-            return GamesDiscoveryItemGameModel(
+        override fun mapToUiModel(game: Game): GamesDiscoveryItemGameUiModel {
+            return GamesDiscoveryItemGameUiModel(
                 id = game.id,
                 title = game.name,
                 coverUrl = null
             )
         }
-
     }
-
-
 }
